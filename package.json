@@ -4,6 +4,18 @@
   "displayName": "Copilot Code Review",
   "license": "MIT",
   "description": "Use GitHub Copilot to review your code and suggest improvements",
+  "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "badges": [
+    {
+      "url": "https://img.shields.io/badge/license-MIT-orange",
+      "href": "https://github.com/mkaczkowski/copilot-code-review/blob/main/LICENSE",
+      "description": "MIT License"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/mkaczkowski/copilot-code-review"
@@ -27,11 +39,21 @@
   "contributes": {
     "chatParticipants": [
       {
-        "id": "copilot-code-review.review",
-        "fullName": "Code Review",
-        "name": "review",
-        "description": "Review your code and suggest improvements",
-        "isSticky": true
+        "id": "copilot-code-review.pr",
+        "fullName": "PR-Reviewer",
+        "name": "pr",
+        "description": "Review PR code changes",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "write-description",
+            "description": "Write PR description"
+          },
+          {
+            "name": "self-review",
+            "description": "Self-review code"
+          }
+        ]
       }
     ],
     "commands": [
@@ -45,7 +67,7 @@
       "properties": {
         "copilotCodeReview.customPrompt": {
           "type": "string",
-          "default": "Please review this code for bugs, errors, and improvements:",
+          "default": "",
           "description": "Custom prompt to use when asking Copilot to review code"
         },
         "copilotCodeReview.enableDebugLogging": {

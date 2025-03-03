@@ -13,26 +13,6 @@ export interface ICodeReviewOptions {
 }
 
 /**
- * Response from Copilot code review
- */
-export interface ICopilotResponse {
-  /** Content of the response */
-  content: string;
-  /** Error message if the request failed */
-  error?: string;
-}
-
-/**
- * Represents a file reference in a diff
- */
-export interface IDiffFileReference {
-  /** File path */
-  path: string;
-  /** Line number in the file */
-  lineNumber?: number;
-}
-
-/**
  * Result of a code review operation
  */
 export interface ICodeReviewResult {
@@ -64,4 +44,13 @@ export interface CodeReviewComment {
   lineNumber?: number;
   /** The actual comment text */
   comment: string;
+}
+
+/**
+ * Result of a git diff operation
+ */
+export interface DiffResult {
+  diff: string;
+  mainBranchName: string;
+  error?: string;
 }

@@ -1,6 +1,32 @@
+import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { CodeReviewComment } from '../types';
-import { Logger } from './logger';
+import {
+  COPILOT_ERROR_MESSAGES,
+  createErrorResponse,
+  handleServiceError,
+  ICopilotResponse,
+  selectChatModel,
+  sendRequestToModel
+} from '../../services/copilot';
+import { Logger } from '../../utils/logger';
+import { CodeReviewPrompt } from './prompts/codeReviewPrompt';
+import { CodeReviewComment, ICodeReviewOptions } from './reviewCodeCommand.types';
+
+/**
+ * Retrieves the custom prompt from extension settings or uses the default
+ */
+export function getCustomPrompt(): string {
+  const config = vscode.workspace.getConfiguration('copilotCodeReview');
+  return config.get<string>('customPrompt', '');
+}
+
+/**
+ * Updates the custom prompt in the extension settings
+ */
+export async function updateCustomPrompt(prompt: string): Promise<void> {
+  const config = vscode.workspace.getConfiguration('copilotCodeReview');
+  await config.update('customPrompt', prompt, vscode.ConfigurationTarget.Global);
+}
 
 /**
  * Regular expressions for parsing file references
@@ -25,7 +51,6 @@ const LINE_PATTERNS = {
  */
 export function streamCodeReview(reviewContent: string, documentUri: string, stream: vscode.ChatResponseStream): void {
   if (!reviewContent) {
-    Logger.debug('Empty review content, nothing to stream');
     return;
   }
 
@@ -35,7 +60,6 @@ export function streamCodeReview(reviewContent: string, documentUri: string, str
 
     // If no structured comments were found, just output the original content
     if (comments.length === 0 || !hasFileReferences(comments)) {
-      Logger.debug('No structured comments found, outputting raw content');
       stream.markdown(reviewContent);
       return;
     }
@@ -215,18 +239,6 @@ function streamCommentsWithAnchors(
   }
 }
 
-function streamAnchor(
-  comment: CodeReviewComment,
-  docUri: vscode.Uri,
-  file: string,
-  stream: vscode.ChatResponseStream
-): void {
-  const targetUri = createFileUri(docUri, file);
-  const position = new vscode.Position(0, 0);
-  const location = new vscode.Location(targetUri, position);
-  stream.anchor(location, `Go to ${file}`);
-}
-
 /**
  * Streams a single comment with an anchor if applicable
  */
@@ -283,5 +295,139 @@ function createCustomAnchor(
     Logger.error('Error creating custom anchor', { error });
     // If anchor creation fails, just output the text
     stream.markdown(customText);
+  }
+}
+
+/**
+ * Generates a code review for the given diff
+ */
+export async function generateCodeReview(
+  diffOutput: string,
+  _mainBranchName: string,
+  stream: vscode.ChatResponseStream,
+  token: vscode.CancellationToken
+): Promise<boolean> {
+  try {
+    // Get custom prompt if available
+    const customPrompt = getCustomPrompt();
+
+    // Check for cancellation
+    if (token.isCancellationRequested) {
+      return false;
+    }
+
+    // Get the model to use for code review
+    const model = await selectChatModel(token);
+    if (!model) {
+      stream.markdown(COPILOT_ERROR_MESSAGES.NO_MODEL);
+      return false;
+    }
+
+    // Create the prompt messages for code review
+    const messages = await createPromptMessages(
+      {
+        selectedCode: diffOutput,
+        customPrompt,
+        language: 'diff'
+      },
+      model
+    );
+
+    if (!messages) {
+      stream.markdown('Failed to create prompt messages for code review');
+      return false;
+    }
+
+    // Send the request to the language model
+    const response = await sendRequestToModel(messages, model, token);
+
+    if (token.isCancellationRequested) {
+      return false;
+    }
+
+    if (response.error) {
+      stream.markdown(`Code review failed: ${response.error}`);
+      return false;
+    }
+
+    // Stream the response with proper anchors
+    streamCodeReview(response.content, 'diff', stream);
+
+    return true;
+  } catch (error) {
+    Logger.error('Error creating prompt messages', error);
+    stream.markdown('An error occurred during code review');
+    return false;
+  }
+}
+
+/**
+ * Creates prompt messages for the code review
+ */
+async function createPromptMessages(
+  options: ICodeReviewOptions,
+  model: vscode.LanguageModelChat
+): Promise<vscode.LanguageModelChatMessage[] | undefined> {
+  try {
+    Logger.debug('Rendering prompt for code review');
+
+    const { messages } = await renderPrompt(
+      CodeReviewPrompt,
+      {
+        customPrompt: options.customPrompt,
+        selectedCode: options.selectedCode || '',
+        language: options.language || 'code'
+      },
+      { modelMaxPromptTokens: model.maxInputTokens },
+      model
+    );
+
+    Logger.debug('Generated messages for code review', {
+      messageCount: messages.length
+    });
+
+    return messages;
+  } catch (error) {
+    Logger.error('Error creating prompt messages', error);
+    return undefined;
+  }
+}
+
+/**
+ * Sends code to Copilot for review and returns the response
+ */
+export async function reviewCodeWithCopilot(
+  options: ICodeReviewOptions,
+  token: vscode.CancellationToken
+): Promise<ICopilotResponse> {
+  try {
+    Logger.debug('Starting code review with Copilot', {
+      language: options.language,
+      documentUri: options.documentUri,
+      codeLength: options.selectedCode?.length || 0
+    });
+
+    // Check for cancellation
+    if (token.isCancellationRequested) {
+      Logger.debug('Code review cancelled before starting');
+      return createErrorResponse(COPILOT_ERROR_MESSAGES.CANCELLED);
+    }
+
+    // Get the model to use for code review
+    const model = await selectChatModel(token);
+    if (!model) {
+      return createErrorResponse(COPILOT_ERROR_MESSAGES.NO_MODEL);
+    }
+
+    // Create the prompt messages
+    const messages = await createPromptMessages(options, model);
+    if (!messages) {
+      return createErrorResponse('Failed to create prompt messages');
+    }
+
+    // Send the request to the language model
+    return await sendRequestToModel(messages, model, token);
+  } catch (error) {
+    return handleServiceError(error);
   }
 }
