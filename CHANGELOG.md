@@ -6,7 +6,8 @@ All notable changes to the "Copilot Code Review" extension will be documented in
 
 ### Added
 
-- Code review functionality
+- PR description generation feature
+- Self-review code command
 - Custom prompt configuration
 - Debug logging capability
 
@@ -22,6 +23,7 @@ All notable changes to the "Copilot Code Review" extension will be documented in
 - Initial release with basic functionality
 - GitHub Copilot integration
 - Git diff analysis
+- Command palette integration
 
 ### Fixed
 

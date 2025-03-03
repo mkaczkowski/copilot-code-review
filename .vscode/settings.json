@@ -12,5 +12,6 @@
     "out": true
   },
   "git.branchProtection": ["main"],
-  "files.trimTrailingWhitespace": true
+  "files.trimTrailingWhitespace": true,
+  "githubPullRequests.pullRequestDescription": "Copilot"
 }

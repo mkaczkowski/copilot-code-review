@@ -9,8 +9,10 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-!out/**/*.js
+!assets/**
+!out/**
 .git/**
 .github/**
 .idea/**
 node_modules/**
+**/*.placeholder
