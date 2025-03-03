@@ -42,7 +42,7 @@ This extension works by comparing your local changes to the main branch of your 
 
 This extension contributes the following settings:
 
-- `copilotCodeReview.customPrompt`: Customize the prompt sent to Copilot for code review (default: "Please review this code for bugs, errors, and improvements:")
+- `copilotCodeReview.customPrompt`: Customize the prompt sent to Copilot for code review
 - `copilotCodeReview.enableDebugLogging`: Enable debug logging for the extension (default: true)
 
 ## Known Issues

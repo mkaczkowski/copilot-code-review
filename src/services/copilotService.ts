@@ -102,7 +102,7 @@ async function createPromptMessages(
     const { messages } = await renderPrompt(
       CodeReviewPrompt,
       {
-        customPrompt: options.customPrompt || 'Please review this code for bugs, errors, and improvements:',
+        customPrompt: options.customPrompt,
         selectedCode: options.selectedCode || '',
         language: options.language || 'code'
       },

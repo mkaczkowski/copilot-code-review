@@ -167,7 +167,7 @@ async function generateCodeReview(
   try {
     const customPrompt = getCustomPrompt();
 
-    Logger.debug('Using custom prompt for diff review', { customPrompt });
+    Logger.debug('Using custom prompt for diff review');
 
     const options: ICodeReviewOptions = {
       customPrompt,

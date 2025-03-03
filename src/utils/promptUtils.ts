@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
  */
 export function getCustomPrompt(): string {
   const config = vscode.workspace.getConfiguration('copilotCodeReview');
-  return config.get<string>('customPrompt', 'Please review this code for bugs, errors, and improvements:');
+  return config.get<string>('customPrompt', '');
 }
 
 /**

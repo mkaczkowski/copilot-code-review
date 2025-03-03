@@ -41,7 +41,7 @@ const vscode = __importStar(require("vscode"));
  */
 function getCustomPrompt() {
     const config = vscode.workspace.getConfiguration('copilotCodeReview');
-    return config.get('customPrompt', 'Please review this code for bugs, errors, and improvements:');
+    return config.get('customPrompt', '');
 }
 /**
  * Updates the custom prompt in the extension settings

@@ -45,7 +45,7 @@
       "properties": {
         "copilotCodeReview.customPrompt": {
           "type": "string",
-          "default": "Please review this code for bugs, errors, and improvements:",
+          "default": "",
           "description": "Custom prompt to use when asking Copilot to review code"
         },
         "copilotCodeReview.enableDebugLogging": {
