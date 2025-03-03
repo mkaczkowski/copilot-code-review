@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { Logger } from '../../utils/logger';
-import { CommandOptions, getDiffWithMainBranch, getWorkspaceFolder, registerCommand } from '../commandUtils';
+import { CommandOptions, getDiffWithMainBranch, getWorkspaceFolder } from '../commandUtils';
 import { generateCodeReview } from './reviewCodeCommand.helpers';
 import { ICodeReviewResult } from './reviewCodeCommand.types';
 
@@ -15,16 +14,9 @@ export const reviewCodeCommandOptions: CommandOptions = {
 };
 
 /**
- * Registers the command to review code differences between current state and main branch
- */
-export function registerReviewCodeCommand(context: vscode.ExtensionContext) {
-  registerCommand(context, reviewCodeCommandOptions, handleReviewCodeCommand);
-}
-
-/**
  * Handles the review code command
  */
-async function handleReviewCodeCommand(
+export async function handleReviewCodeCommand(
   _request: vscode.ChatRequest,
   stream: vscode.ChatResponseStream,
   token: vscode.CancellationToken
@@ -48,7 +40,6 @@ async function handleReviewCodeCommand(
   }
 
   if (!diffResult.diff.trim()) {
-    Logger.debug('No differences found with main branch');
     stream.markdown('No code differences found with main branch.');
     return;
   }
@@ -75,6 +66,5 @@ async function handleReviewCodeCommand(
     }
   };
 
-  Logger.debug('Returning code review result', result);
   return result;
 }

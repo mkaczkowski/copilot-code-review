@@ -57,7 +57,6 @@ export class CommandCompletionProvider implements vscode.CompletionItemProvider 
  * @param commands Array of command options to provide completion for
  */
 export function registerCommandCompletion(context: vscode.ExtensionContext, commands: CommandOptions[]): void {
-  Logger.debug('Registering command completion provider');
 
   // Register the completion provider for chat input
   const provider = new CommandCompletionProvider(commands);
@@ -68,5 +67,4 @@ export function registerCommandCompletion(context: vscode.ExtensionContext, comm
   );
 
   context.subscriptions.push(disposable);
-  Logger.debug('Command completion provider registered successfully');
 }

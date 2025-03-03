@@ -8,7 +8,6 @@ import { CommandOptions } from './commandUtils';
  * @param options The command options
  */
 export function registerCommandPaletteCommand(context: vscode.ExtensionContext, options: CommandOptions): void {
-  Logger.debug(`Registering ${options.name} command for command palette`);
 
   // Register the command with VS Code
   const disposable = vscode.commands.registerCommand(options.commandKey, async () => {
@@ -29,7 +28,6 @@ export function registerCommandPaletteCommand(context: vscode.ExtensionContext, 
   });
 
   context.subscriptions.push(disposable);
-  Logger.debug(`${options.name} command registered for command palette successfully`);
 }
 
 /**
@@ -38,11 +36,9 @@ export function registerCommandPaletteCommand(context: vscode.ExtensionContext, 
  * @param commands Array of command options to register
  */
 export function registerAllCommandPaletteCommands(context: vscode.ExtensionContext, commands: CommandOptions[]): void {
-  Logger.debug('Registering all commands for command palette');
 
   commands.forEach(command => {
     registerCommandPaletteCommand(context, command);
   });
 
-  Logger.debug('All commands registered for command palette successfully');
 }

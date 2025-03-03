@@ -16,7 +16,7 @@ Process:
    - Checklist: Mark the relevant items based on the changes and any project-specific requirements
 4. Ensure that your responses are clear, concise, and directly related to the changes shown in the git diff.
 5. If there are any sections in the template that cannot be filled based on the information in the git diff, indicate that additional information is needed.
-6. Output your completed pull request template, maintaining the original structure and formatting of the PR template.
+6. Output your completed pull request template
 
 Make sure to fill out all sections of the template based on the information from the git diff, using placeholder text or notes where necessary if certain information cannot be inferred from the diff alone.`;
 

@@ -51,7 +51,6 @@ const LINE_PATTERNS = {
  */
 export function streamCodeReview(reviewContent: string, documentUri: string, stream: vscode.ChatResponseStream): void {
   if (!reviewContent) {
-    Logger.debug('Empty review content, nothing to stream');
     return;
   }
 
@@ -61,7 +60,6 @@ export function streamCodeReview(reviewContent: string, documentUri: string, str
 
     // If no structured comments were found, just output the original content
     if (comments.length === 0 || !hasFileReferences(comments)) {
-      Logger.debug('No structured comments found, outputting raw content');
       stream.markdown(reviewContent);
       return;
     }
@@ -310,48 +308,56 @@ export async function generateCodeReview(
   token: vscode.CancellationToken
 ): Promise<boolean> {
   try {
+    // Get custom prompt if available
     const customPrompt = getCustomPrompt();
 
-    Logger.debug('Using custom prompt for diff review');
+    // Check for cancellation
+    if (token.isCancellationRequested) {
+      return false;
+    }
 
-    const options: ICodeReviewOptions = {
-      customPrompt,
-      selectedCode: diffOutput,
-      language: 'diff'
-    };
+    // Get the model to use for code review
+    const model = await selectChatModel(token);
+    if (!model) {
+      stream.markdown(COPILOT_ERROR_MESSAGES.NO_MODEL);
+      return false;
+    }
 
-    // Send the request directly to Copilot
-    stream.progress('Generating code review...');
+    // Create the prompt messages for code review
+    const messages = await createPromptMessages(
+      {
+        selectedCode: diffOutput,
+        customPrompt,
+        language: 'diff'
+      },
+      model
+    );
 
-    // Use the reviewCodeWithCopilot directly
-    const response = await reviewCodeWithCopilot(options, token);
+    if (!messages) {
+      stream.markdown('Failed to create prompt messages for code review');
+      return false;
+    }
+
+    // Send the request to the language model
+    const response = await sendRequestToModel(messages, model, token);
 
     if (token.isCancellationRequested) {
-      Logger.debug('Code review cancelled by user');
       return false;
     }
 
     if (response.error) {
-      Logger.error('Code review failed', response.error);
       stream.markdown(`Code review failed: ${response.error}`);
       return false;
     }
 
-    Logger.debug('Received code review response', {
-      responseLength: response.content.length
-    });
-
-    // Stream the response to the chat with proper anchors
-    Logger.debug('Streaming code review response with anchors');
-
-    // Create a workspace URI to use as a base for anchors
-    const workspaceUri = vscode.workspace.workspaceFolders?.[0].uri.toString() || '';
-    streamCodeReview(response.content, workspaceUri, stream);
+    // Stream the response with proper anchors
+    streamCodeReview(response.content, 'diff', stream);
 
     return true;
   } catch (error) {
-    // This error is now handled by the common utility
-    throw error;
+    Logger.error('Error creating prompt messages', error);
+    stream.markdown('An error occurred during code review');
+    return false;
   }
 }
 

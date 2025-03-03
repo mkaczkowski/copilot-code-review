@@ -4,6 +4,18 @@
   "displayName": "Copilot Code Review",
   "license": "MIT",
   "description": "Use GitHub Copilot to review your code and suggest improvements",
+  "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "badges": [
+    {
+      "url": "https://img.shields.io/badge/license-MIT-orange",
+      "href": "https://github.com/mkaczkowski/copilot-code-review/blob/main/LICENSE",
+      "description": "MIT License"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/mkaczkowski/copilot-code-review"
@@ -27,32 +39,27 @@
   "contributes": {
     "chatParticipants": [
       {
-        "id": "copilot-code-review.review",
-        "fullName": "Code Self-Review",
+        "id": "copilot-code-review.pr",
+        "fullName": "PR-Reviewer",
         "name": "pr",
-        "description": "Review your code and suggest improvements",
-        "isSticky": true
-      },
-      {
-        "id": "copilot-code-review.description",
-        "fullName": "Write PR description",
-        "name": "pr",
-        "description": "Write description for code changes",
-        "isSticky": true
+        "description": "Review PR code changes",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "write-description",
+            "description": "Write PR description"
+          },
+          {
+            "name": "self-review",
+            "description": "Self-review code"
+          }
+        ]
       }
     ],
     "commands": [
       {
         "command": "copilot-code-review.showLogs",
         "title": "Copilot Code Review: Show Debug Logs"
-      },
-      {
-        "command": "copilot-code-review.review",
-        "title": "Copilot Code Review: Self-Review Code"
-      },
-      {
-        "command": "copilot-code-review.description",
-        "title": "Copilot Code Review: Write PR Description"
       }
     ],
     "configuration": {

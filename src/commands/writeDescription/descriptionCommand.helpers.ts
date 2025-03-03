@@ -25,13 +25,11 @@ export async function getPRTemplate(workspaceFolder: string): Promise<{ content:
 
     // Check if the template file exists
     if (!fs.existsSync(templatePath)) {
-      Logger.debug('PR template not found at', { templatePath });
       return { content: '', error: GIT_ERROR_MESSAGES.NO_PR_TEMPLATE };
     }
 
     // Read the template file
     const templateContent = fs.readFileSync(templatePath, 'utf8');
-    Logger.debug('PR template found', { templateLength: templateContent.length });
 
     return { content: templateContent };
   } catch (error) {
@@ -49,14 +47,8 @@ export async function generatePRDescriptionWithCopilot(
   token: vscode.CancellationToken
 ): Promise<ICopilotResponse> {
   try {
-    Logger.debug('Starting PR description generation with Copilot', {
-      gitDiffLength: options.gitDiff.length,
-      templateLength: options.prTemplate.length
-    });
-
     // Check for cancellation
     if (token.isCancellationRequested) {
-      Logger.debug('PR description generation cancelled before starting');
       return createErrorResponse(COPILOT_ERROR_MESSAGES.CANCELLED);
     }
 
@@ -87,8 +79,6 @@ async function createPRDescriptionPromptMessages(
   model: vscode.LanguageModelChat
 ): Promise<vscode.LanguageModelChatMessage[] | undefined> {
   try {
-    Logger.debug('Rendering prompt for PR description');
-
     const { messages } = await renderPrompt(
       PRDescriptionPrompt,
       {
@@ -99,10 +89,6 @@ async function createPRDescriptionPromptMessages(
       { modelMaxPromptTokens: model.maxInputTokens },
       model
     );
-
-    Logger.debug('Generated messages for PR description', {
-      messageCount: messages.length
-    });
 
     return messages;
   } catch (error) {
@@ -120,14 +106,12 @@ export function getJiraTicketNumber(): string {
     // Get the current branch name
     const workspaceFolder = getWorkspaceFolder();
     if (!workspaceFolder) {
-      Logger.debug('No workspace folder found when getting JIRA ticket number');
       return 'UNKNOWN';
     }
 
     // Execute git command synchronously
     const branchName = execSync('git rev-parse --abbrev-ref HEAD', { cwd: workspaceFolder }).toString().trim();
 
-    Logger.debug(`Current branch name: ${branchName}`);
 
     // Extract JIRA ticket number using regex
     // Format: ABC-123 (project code, followed by hyphen, followed by numbers)
@@ -139,7 +123,6 @@ export function getJiraTicketNumber(): string {
       return match[1].toUpperCase();
     }
 
-    Logger.debug('No JIRA ticket number found in branch name');
     return 'UNKNOWN';
   } catch (error) {
     Logger.error('Error getting JIRA ticket number', error);

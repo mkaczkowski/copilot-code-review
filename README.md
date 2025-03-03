@@ -1,5 +1,8 @@
 # Copilot Code Review
 
+[![Version](https://img.shields.io/visual-studio-marketplace/v/mkaczkowski.copilot-code-review)](https://marketplace.visualstudio.com/items?itemName=mkaczkowski.copilot-code-review)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A VS Code extension that leverages GitHub Copilot to review your changes and suggest improvements. This extension helps you improve code quality by providing AI-powered code reviews directly in your editor.
 
 ## Features
@@ -44,8 +47,7 @@ This extension works by comparing your local changes to the main branch of your 
 2. Type `@pr` followed by a command:
 
    - `@pr /self-review` - to review your code changes
-   - `@pr /write-desc` - to generate a description for your changes
-   - `@pr /all` - to see a list of all available commands
+   - `@pr /write-description` - to generate a description for your changes
 
    Auto-completion will suggest available commands as you type.
 
@@ -82,3 +84,15 @@ Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Screenshots
+
+![Code Review Example](assets/code-review-example.png)
+_Example of a code review performed by the extension_
+
+![PR Description Example](assets/pr-description-example.png)
+_Example of a generated PR description_
+
+## Changelog
+
+See the [CHANGELOG.md](CHANGELOG.md) for details about each release.

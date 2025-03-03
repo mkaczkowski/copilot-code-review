@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Logger } from '../../utils/logger';
-import { CommandOptions, getDiffWithMainBranch, getWorkspaceFolder, registerCommand } from '../commandUtils';
+import { CommandOptions, getDiffWithMainBranch, getWorkspaceFolder } from '../commandUtils';
 import { generatePRDescriptionWithCopilot, getJiraTicketNumber, getPRTemplate } from './descriptionCommand.helpers';
 
 /**
@@ -10,20 +10,13 @@ export const descriptionCommandOptions: CommandOptions = {
   name: 'description',
   commandKey: 'copilot-code-review.description',
   iconName: 'note',
-  commandTrigger: '/write-desc'
+  commandTrigger: '/write-description'
 };
-
-/**
- * Registers the command to write description for code changes
- */
-export function registerDescriptionCommand(context: vscode.ExtensionContext) {
-  registerCommand(context, descriptionCommandOptions, handleDescriptionCommand);
-}
 
 /**
  * Handles the description command
  */
-async function handleDescriptionCommand(
+export async function handleDescriptionCommand(
   _request: vscode.ChatRequest,
   stream: vscode.ChatResponseStream,
   token: vscode.CancellationToken
@@ -47,7 +40,6 @@ async function handleDescriptionCommand(
   }
 
   if (!diffResult.diff.trim()) {
-    Logger.debug('No differences found with main branch');
     stream.markdown('No code differences found with main branch.');
     return;
   }
@@ -57,7 +49,6 @@ async function handleDescriptionCommand(
   const templateResult = await getPRTemplate(workspaceFolder);
 
   if (templateResult.error) {
-    Logger.debug('No PR template found');
     stream.markdown(`#### Missing PR Template
 
 To create a PR template:
@@ -89,7 +80,6 @@ Would you like to continue with a basic template? If so, please create the templ
     );
 
     if (token.isCancellationRequested) {
-      Logger.debug('PR description generation cancelled by user');
       return;
     }
 
@@ -100,14 +90,34 @@ Would you like to continue with a basic template? If so, please create the templ
     }
 
     // Output the PR description
-    Logger.debug('PR description generated successfully');
     stream.markdown('## Generated PR Description\n\n' + response.content);
 
     // Add a note about copying
     stream.markdown('\n\n---\n*You can copy this description and use it for your pull request.*');
+
+    // Add a button to copy the description to clipboard
+    const copyButton = {
+      title: 'Copy to Clipboard',
+      command: 'copilot-code-review.copyToClipboard',
+      arguments: [response.content]
+    };
+
+    stream.button(copyButton);
+
+    // Register the command to copy to clipboard
+    vscode.commands.executeCommand('setContext', 'copilot-code-review.hasPRDescription', true);
+    vscode.commands.registerCommand('copilot-code-review.copyToClipboard', async (text: string) => {
+      try {
+        let strippedText = text.replace(/```markdown\n?/g, '').replace(/```\n?/g, '');
+        await vscode.env.clipboard.writeText(strippedText);
+        vscode.window.showInformationMessage('PR description copied to clipboard');
+      } catch (error) {
+        Logger.error('Error copying PR description to clipboard', error);
+        vscode.window.showErrorMessage('Failed to copy PR description to clipboard');
+      }
+    });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     Logger.error('Error generating PR description', error);
-    stream.markdown(`Error generating PR description: ${errorMessage}`);
+    stream.markdown('An error occurred while generating the PR description');
   }
 }
