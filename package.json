@@ -1,0 +1,88 @@
+{
+  "name": "copilot-code-review",
+  "publisher": "mkaczkowski",
+  "displayName": "Copilot Code Review",
+  "license": "MIT",
+  "description": "Use GitHub Copilot to review your code and suggest improvements",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mkaczkowski/copilot-code-review"
+  },
+  "keywords": [
+    "code review",
+    "github copilot",
+    "ai",
+    "code quality",
+    "static analysis"
+  ],
+  "version": "0.3.0",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "activationEvents": [],
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "copilot-code-review.review",
+        "fullName": "Code Review",
+        "name": "review",
+        "description": "Review your code and suggest improvements",
+        "isSticky": true
+      }
+    ],
+    "commands": [
+      {
+        "command": "copilot-code-review.showLogs",
+        "title": "Copilot Code Review: Show Debug Logs"
+      }
+    ],
+    "configuration": {
+      "title": "Copilot Code Review",
+      "properties": {
+        "copilotCodeReview.customPrompt": {
+          "type": "string",
+          "default": "Please review this code for bugs, errors, and improvements:",
+          "description": "Custom prompt to use when asking Copilot to review code"
+        },
+        "copilotCodeReview.enableDebugLogging": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable debug logging for the extension"
+        }
+      }
+    }
+  },
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@vscode/chat-extension-utils": "^0.0.0-alpha.1",
+    "@vscode/prompt-tsx": "^0.3.0-alpha.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@stylistic/eslint-plugin": "^2.9.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20",
+    "@types/sinon": "^17.0.4",
+    "@types/vscode": "^1.95.0",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.13.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.3.0",
+    "prettier": "^3.5.2",
+    "sinon": "^19.0.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.16.0"
+  }
+}

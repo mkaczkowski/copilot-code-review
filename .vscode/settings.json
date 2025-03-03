@@ -1,0 +1,16 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.format.semicolons": "insert",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "always"
+  },
+  "search.exclude": {
+    "out": true
+  },
+  "git.branchProtection": ["main"],
+  "files.trimTrailingWhitespace": true
+}
