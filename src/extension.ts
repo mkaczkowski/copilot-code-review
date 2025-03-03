@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
-import { registerReviewCodeCommand } from './commands/reviewCodeCommand';
+import { registerReviewCodeCommand, reviewCodeCommandOptions } from './commands/codeReview/reviewCodeCommand';
+import { registerCommandCompletion } from './commands/commandCompletion';
+import { registerAllCommandPaletteCommands } from './commands/commandPalette';
+import { CommandOptions } from './commands/commandUtils';
+import { descriptionCommandOptions, registerDescriptionCommand } from './commands/writeDescription/descriptionCommand';
 import { Logger } from './utils/logger';
+
+const availableCommands: CommandOptions[] = [reviewCodeCommandOptions, descriptionCommandOptions];
 
 export function activate(context: vscode.ExtensionContext) {
   try {
@@ -10,6 +16,12 @@ export function activate(context: vscode.ExtensionContext) {
     registerCommands(context);
 
     registerChatParticipants(context);
+
+    // Register command palette commands
+    registerAllCommandPaletteCommands(context, availableCommands);
+
+    // Register command completion
+    registerCommandCompletion(context, availableCommands);
 
     Logger.info('Extension initialization completed successfully');
   } catch (error) {
@@ -31,6 +43,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
 function registerChatParticipants(context: vscode.ExtensionContext): void {
   Logger.debug('Registering chat participants');
   registerReviewCodeCommand(context);
+  registerDescriptionCommand(context);
 }
 
 export function deactivate() {

@@ -28,9 +28,16 @@
     "chatParticipants": [
       {
         "id": "copilot-code-review.review",
-        "fullName": "Code Review",
-        "name": "review",
+        "fullName": "Code Self-Review",
+        "name": "pr",
         "description": "Review your code and suggest improvements",
+        "isSticky": true
+      },
+      {
+        "id": "copilot-code-review.description",
+        "fullName": "Write PR description",
+        "name": "pr",
+        "description": "Write description for code changes",
         "isSticky": true
       }
     ],
@@ -38,6 +45,14 @@
       {
         "command": "copilot-code-review.showLogs",
         "title": "Copilot Code Review: Show Debug Logs"
+      },
+      {
+        "command": "copilot-code-review.review",
+        "title": "Copilot Code Review: Self-Review Code"
+      },
+      {
+        "command": "copilot-code-review.description",
+        "title": "Copilot Code Review: Write PR Description"
       }
     ],
     "configuration": {

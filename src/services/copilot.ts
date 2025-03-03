@@ -1,61 +1,28 @@
-import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { CodeReviewPrompt } from '../prompts/codeReviewPrompt';
-import { ICodeReviewOptions, ICopilotResponse } from '../types';
 import { Logger } from '../utils/logger';
 
-/**
- * Error messages for Copilot service
- */
-const ERROR_MESSAGES = {
+export const COPILOT_ERROR_MESSAGES = {
   NO_MODEL: 'No suitable language model found for code review',
   CANCELLED: 'Operation cancelled by user',
   UNKNOWN: 'An unknown error occurred during code review'
 };
 
 /**
- * Sends code to Copilot for review and returns the response
+ * Response from Copilot code review
  */
-export async function reviewCodeWithCopilot(
-  options: ICodeReviewOptions,
-  token: vscode.CancellationToken
-): Promise<ICopilotResponse> {
-  try {
-    Logger.debug('Starting code review with Copilot', {
-      language: options.language,
-      documentUri: options.documentUri,
-      codeLength: options.selectedCode?.length || 0
-    });
-
-    // Check for cancellation
-    if (token.isCancellationRequested) {
-      Logger.debug('Code review cancelled before starting');
-      return createErrorResponse(ERROR_MESSAGES.CANCELLED);
-    }
-
-    // Get the model to use for code review
-    const model = await selectChatModel(token);
-    if (!model) {
-      return createErrorResponse(ERROR_MESSAGES.NO_MODEL);
-    }
-
-    // Create the prompt messages
-    const messages = await createPromptMessages(options, model);
-    if (!messages) {
-      return createErrorResponse('Failed to create prompt messages');
-    }
-
-    // Send the request to the language model
-    return await sendRequestToModel(messages, model, token);
-  } catch (error) {
-    return handleServiceError(error);
-  }
+export interface ICopilotResponse {
+  /** Content of the response */
+  content: string;
+  /** Error message if the request failed */
+  error?: string;
 }
 
 /**
+ *
+/**
  * Selects an appropriate chat model for code review
  */
-async function selectChatModel(token: vscode.CancellationToken): Promise<vscode.LanguageModelChat | undefined> {
+export async function selectChatModel(token: vscode.CancellationToken): Promise<vscode.LanguageModelChat | undefined> {
   try {
     Logger.debug('Selecting chat model for code review');
 
@@ -71,7 +38,7 @@ async function selectChatModel(token: vscode.CancellationToken): Promise<vscode.
     });
 
     if (!models || models.length === 0) {
-      Logger.error(ERROR_MESSAGES.NO_MODEL);
+      Logger.error(COPILOT_ERROR_MESSAGES.NO_MODEL);
       return undefined;
     }
 
@@ -90,41 +57,9 @@ async function selectChatModel(token: vscode.CancellationToken): Promise<vscode.
 }
 
 /**
- * Creates prompt messages for the code review
- */
-async function createPromptMessages(
-  options: ICodeReviewOptions,
-  model: vscode.LanguageModelChat
-): Promise<vscode.LanguageModelChatMessage[] | undefined> {
-  try {
-    Logger.debug('Rendering prompt for code review');
-
-    const { messages } = await renderPrompt(
-      CodeReviewPrompt,
-      {
-        customPrompt: options.customPrompt,
-        selectedCode: options.selectedCode || '',
-        language: options.language || 'code'
-      },
-      { modelMaxPromptTokens: model.maxInputTokens },
-      model
-    );
-
-    Logger.debug('Generated messages for code review', {
-      messageCount: messages.length
-    });
-
-    return messages;
-  } catch (error) {
-    Logger.error('Error creating prompt messages', error);
-    return undefined;
-  }
-}
-
-/**
  * Sends a request to the language model and processes the response
  */
-async function sendRequestToModel(
+export async function sendRequestToModel(
   messages: vscode.LanguageModelChatMessage[],
   model: vscode.LanguageModelChat,
   token: vscode.CancellationToken
@@ -135,7 +70,7 @@ async function sendRequestToModel(
     // Check for cancellation
     if (token.isCancellationRequested) {
       Logger.debug('Request cancelled before sending');
-      return createErrorResponse(ERROR_MESSAGES.CANCELLED);
+      return createErrorResponse(COPILOT_ERROR_MESSAGES.CANCELLED);
     }
 
     const chatResponse = await model.sendRequest(messages, {}, token);
@@ -147,7 +82,7 @@ async function sendRequestToModel(
     for await (const fragment of chatResponse.text) {
       if (token.isCancellationRequested) {
         Logger.debug('Operation cancelled during response streaming');
-        return createErrorResponse(ERROR_MESSAGES.CANCELLED);
+        return createErrorResponse(COPILOT_ERROR_MESSAGES.CANCELLED);
       }
       responseContent += fragment;
     }
@@ -168,7 +103,7 @@ async function sendRequestToModel(
 /**
  * Creates an error response
  */
-function createErrorResponse(errorMessage: string): ICopilotResponse {
+export function createErrorResponse(errorMessage: string): ICopilotResponse {
   return {
     content: '',
     error: errorMessage
@@ -178,12 +113,12 @@ function createErrorResponse(errorMessage: string): ICopilotResponse {
 /**
  * Handles errors in the service
  */
-function handleServiceError(error: unknown): ICopilotResponse {
+export function handleServiceError(error: unknown): ICopilotResponse {
   if (error instanceof Error) {
     Logger.error('Error during code review with Copilot', error);
     return createErrorResponse(error.message);
   }
 
   Logger.error('Unknown error during code review with Copilot', { error });
-  return createErrorResponse(ERROR_MESSAGES.UNKNOWN);
+  return createErrorResponse(COPILOT_ERROR_MESSAGES.UNKNOWN);
 }

@@ -1,14 +1,5 @@
 import { BasePromptElementProps, PromptElement, PromptSizing, UserMessage } from '@vscode/prompt-tsx';
 
-export interface CodeReviewPromptProps extends BasePromptElementProps {
-  /** Custom prompt to use for the review */
-  customPrompt?: string;
-  /** Code to be reviewed */
-  selectedCode: string;
-  /** Programming language of the code */
-  language: string;
-}
-
 const DEFAULT_PROMPT = `You are a code review assistant specialized in self-review. Your task is to analyze a git diff and provide a detailed, constructive review focusing solely on concerns, bugs, and potential improvements. Cconcentrate on identifying issues and suggesting solutions.
 
 Process:
@@ -89,6 +80,16 @@ Provide detailed, actionable suggestions for each issue you find.`;
 /**
  * Prompt element for code review
  */
+
+export interface CodeReviewPromptProps extends BasePromptElementProps {
+  /** Custom prompt to use for the review */
+  customPrompt?: string;
+  /** Code to be reviewed */
+  selectedCode: string;
+  /** Programming language of the code */
+  language: string;
+}
+
 export class CodeReviewPrompt extends PromptElement<CodeReviewPromptProps, void> {
   render(_state: void, _sizing: PromptSizing) {
     return (

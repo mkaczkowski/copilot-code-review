@@ -10,6 +10,8 @@ A VS Code extension that leverages GitHub Copilot to review your changes and sug
 - **Customizable**: Tailor the review focus with custom prompts
 - **Precise Navigation**: Jump directly to the specific code locations mentioned in reviews
 - **Markdown Formatting**: Well-structured reviews with file sections and line references
+- **Command Palette Integration**: Run commands directly from the VS Code Command Palette
+- **Auto-Completion**: Get command suggestions as you type in the chat
 
 ## Installation
 
@@ -34,9 +36,26 @@ This extension works by comparing your local changes to the main branch of your 
 
 1. Open a Git repository in VS Code
 2. Make changes to your code
-3. Open a Copilot Chat
-4. Run the command `@review`
-5. The extension will automatically detect differences with the main branch and review them
+3. Use one of the following methods to run commands:
+
+#### Using Chat
+
+1. Open a Copilot Chat
+2. Type `@pr` followed by a command:
+
+   - `@pr /self-review` - to review your code changes
+   - `@pr /write-desc` - to generate a description for your changes
+   - `@pr /all` - to see a list of all available commands
+
+   Auto-completion will suggest available commands as you type.
+
+#### Using Command Palette
+
+1. Open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
+2. Type "Copilot Code Review" to see available commands:
+   - "Copilot Code Review: Self-Review Code" - to review your code changes
+   - "Copilot Code Review: Write PR Description" - to generate a description for your changes
+   - "Copilot Code Review: Show Debug Logs" - to view the extension logs
 
 ## Extension Settings
 

@@ -1,6 +1,32 @@
+import { renderPrompt } from '@vscode/prompt-tsx';
 import * as vscode from 'vscode';
-import { CodeReviewComment } from '../types';
-import { Logger } from './logger';
+import {
+  COPILOT_ERROR_MESSAGES,
+  createErrorResponse,
+  handleServiceError,
+  ICopilotResponse,
+  selectChatModel,
+  sendRequestToModel
+} from '../../services/copilot';
+import { Logger } from '../../utils/logger';
+import { CodeReviewPrompt } from './prompts/codeReviewPrompt';
+import { CodeReviewComment, ICodeReviewOptions } from './reviewCodeCommand.types';
+
+/**
+ * Retrieves the custom prompt from extension settings or uses the default
+ */
+export function getCustomPrompt(): string {
+  const config = vscode.workspace.getConfiguration('copilotCodeReview');
+  return config.get<string>('customPrompt', '');
+}
+
+/**
+ * Updates the custom prompt in the extension settings
+ */
+export async function updateCustomPrompt(prompt: string): Promise<void> {
+  const config = vscode.workspace.getConfiguration('copilotCodeReview');
+  await config.update('customPrompt', prompt, vscode.ConfigurationTarget.Global);
+}
 
 /**
  * Regular expressions for parsing file references
@@ -215,18 +241,6 @@ function streamCommentsWithAnchors(
   }
 }
 
-function streamAnchor(
-  comment: CodeReviewComment,
-  docUri: vscode.Uri,
-  file: string,
-  stream: vscode.ChatResponseStream
-): void {
-  const targetUri = createFileUri(docUri, file);
-  const position = new vscode.Position(0, 0);
-  const location = new vscode.Location(targetUri, position);
-  stream.anchor(location, `Go to ${file}`);
-}
-
 /**
  * Streams a single comment with an anchor if applicable
  */
@@ -283,5 +297,131 @@ function createCustomAnchor(
     Logger.error('Error creating custom anchor', { error });
     // If anchor creation fails, just output the text
     stream.markdown(customText);
+  }
+}
+
+/**
+ * Generates a code review for the given diff
+ */
+export async function generateCodeReview(
+  diffOutput: string,
+  _mainBranchName: string,
+  stream: vscode.ChatResponseStream,
+  token: vscode.CancellationToken
+): Promise<boolean> {
+  try {
+    const customPrompt = getCustomPrompt();
+
+    Logger.debug('Using custom prompt for diff review');
+
+    const options: ICodeReviewOptions = {
+      customPrompt,
+      selectedCode: diffOutput,
+      language: 'diff'
+    };
+
+    // Send the request directly to Copilot
+    stream.progress('Generating code review...');
+
+    // Use the reviewCodeWithCopilot directly
+    const response = await reviewCodeWithCopilot(options, token);
+
+    if (token.isCancellationRequested) {
+      Logger.debug('Code review cancelled by user');
+      return false;
+    }
+
+    if (response.error) {
+      Logger.error('Code review failed', response.error);
+      stream.markdown(`Code review failed: ${response.error}`);
+      return false;
+    }
+
+    Logger.debug('Received code review response', {
+      responseLength: response.content.length
+    });
+
+    // Stream the response to the chat with proper anchors
+    Logger.debug('Streaming code review response with anchors');
+
+    // Create a workspace URI to use as a base for anchors
+    const workspaceUri = vscode.workspace.workspaceFolders?.[0].uri.toString() || '';
+    streamCodeReview(response.content, workspaceUri, stream);
+
+    return true;
+  } catch (error) {
+    // This error is now handled by the common utility
+    throw error;
+  }
+}
+
+/**
+ * Creates prompt messages for the code review
+ */
+async function createPromptMessages(
+  options: ICodeReviewOptions,
+  model: vscode.LanguageModelChat
+): Promise<vscode.LanguageModelChatMessage[] | undefined> {
+  try {
+    Logger.debug('Rendering prompt for code review');
+
+    const { messages } = await renderPrompt(
+      CodeReviewPrompt,
+      {
+        customPrompt: options.customPrompt,
+        selectedCode: options.selectedCode || '',
+        language: options.language || 'code'
+      },
+      { modelMaxPromptTokens: model.maxInputTokens },
+      model
+    );
+
+    Logger.debug('Generated messages for code review', {
+      messageCount: messages.length
+    });
+
+    return messages;
+  } catch (error) {
+    Logger.error('Error creating prompt messages', error);
+    return undefined;
+  }
+}
+
+/**
+ * Sends code to Copilot for review and returns the response
+ */
+export async function reviewCodeWithCopilot(
+  options: ICodeReviewOptions,
+  token: vscode.CancellationToken
+): Promise<ICopilotResponse> {
+  try {
+    Logger.debug('Starting code review with Copilot', {
+      language: options.language,
+      documentUri: options.documentUri,
+      codeLength: options.selectedCode?.length || 0
+    });
+
+    // Check for cancellation
+    if (token.isCancellationRequested) {
+      Logger.debug('Code review cancelled before starting');
+      return createErrorResponse(COPILOT_ERROR_MESSAGES.CANCELLED);
+    }
+
+    // Get the model to use for code review
+    const model = await selectChatModel(token);
+    if (!model) {
+      return createErrorResponse(COPILOT_ERROR_MESSAGES.NO_MODEL);
+    }
+
+    // Create the prompt messages
+    const messages = await createPromptMessages(options, model);
+    if (!messages) {
+      return createErrorResponse('Failed to create prompt messages');
+    }
+
+    // Send the request to the language model
+    return await sendRequestToModel(messages, model, token);
+  } catch (error) {
+    return handleServiceError(error);
   }
 }
