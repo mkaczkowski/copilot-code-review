@@ -1,13 +1,8 @@
 import { renderPrompt } from '@vscode/prompt-tsx';
+import * as fs from 'fs';
+import path from 'path';
 import * as vscode from 'vscode';
-import {
-  COPILOT_ERROR_MESSAGES,
-  createErrorResponse,
-  handleServiceError,
-  ICopilotResponse,
-  selectChatModel,
-  sendRequestToModel
-} from '../../services/copilot';
+import { COPILOT_ERROR_MESSAGES, selectChatModel, sendRequestToModel } from '../../services/copilot';
 import { Logger } from '../../utils/logger';
 import { getWorkspaceFolder } from '../commandUtils';
 import { CodeReviewPrompt } from './prompts/codeReviewPrompt';
@@ -73,8 +68,8 @@ export function streamCodeReview(reviewContent: string, stream: vscode.ChatRespo
       throw new Error('Workspace folder not found');
     }
 
-    const docUri = vscode.Uri.parse(workspaceFolder);
     for (const file of fileGroups.keys()) {
+      const docUri = vscode.Uri.parse(workspaceFolder);
       stream.reference(createFileUri(docUri, file));
     }
 
@@ -344,6 +339,7 @@ function createCustomAnchor(
 export async function generateCodeReview(
   diffOutput: string,
   _mainBranchName: string,
+  changedFiles: Record<string, string>,
   stream: vscode.ChatResponseStream,
   token: vscode.CancellationToken
 ): Promise<boolean> {
@@ -368,7 +364,8 @@ export async function generateCodeReview(
       {
         selectedCode: diffOutput,
         customPrompt,
-        language: 'diff'
+        language: 'diff',
+        files: changedFiles
       },
       model
     );
@@ -416,7 +413,8 @@ async function createPromptMessages(
       {
         customPrompt: options.customPrompt,
         selectedCode: options.selectedCode || '',
-        language: options.language || 'code'
+        language: options.language || 'code',
+        files: options.files
       },
       { modelMaxPromptTokens: model.maxInputTokens },
       model
@@ -434,40 +432,42 @@ async function createPromptMessages(
 }
 
 /**
- * Sends code to Copilot for review and returns the response
+ * Gets the content of changed files from the git diff
  */
-export async function reviewCodeWithCopilot(
-  options: ICodeReviewOptions,
-  token: vscode.CancellationToken
-): Promise<ICopilotResponse> {
+export async function getChangedFilesContent(
+  gitDiff: string,
+  workspaceFolder: string
+): Promise<Record<string, string>> {
+  const changedFiles: Record<string, string> = {};
+
   try {
-    Logger.debug('Starting code review with Copilot', {
-      language: options.language,
-      documentUri: options.documentUri,
-      codeLength: options.selectedCode?.length || 0
-    });
+    // Extract file paths from git diff
+    const filePathRegex = /^diff --git a\/(.+?) b\/(.+?)$/gm;
+    const matches = [...gitDiff.matchAll(filePathRegex)];
 
-    // Check for cancellation
-    if (token.isCancellationRequested) {
-      Logger.debug('Code review cancelled before starting');
-      return createErrorResponse(COPILOT_ERROR_MESSAGES.CANCELLED);
+    // Get unique file paths (b/ is the new version)
+    const filePaths = [...new Set(matches.map(match => match[2]))];
+
+    // Read content of each file
+    for (const filePath of filePaths) {
+      try {
+        const fullPath = path.join(workspaceFolder, filePath);
+
+        // Check if file exists
+        if (fs.existsSync(fullPath)) {
+          // Read file content
+          const content = fs.readFileSync(fullPath, 'utf8');
+
+          // Add to changedFiles object
+          changedFiles[filePath] = content;
+        }
+      } catch (fileError) {
+        Logger.warn(`Could not read file ${filePath}`, fileError);
+      }
     }
-
-    // Get the model to use for code review
-    const model = await selectChatModel(token);
-    if (!model) {
-      return createErrorResponse(COPILOT_ERROR_MESSAGES.NO_MODEL);
-    }
-
-    // Create the prompt messages
-    const messages = await createPromptMessages(options, model);
-    if (!messages) {
-      return createErrorResponse('Failed to create prompt messages');
-    }
-
-    // Send the request to the language model
-    return await sendRequestToModel(messages, model, token);
   } catch (error) {
-    return handleServiceError(error);
+    Logger.error('Error getting changed files content', error);
   }
+
+  return changedFiles;
 }

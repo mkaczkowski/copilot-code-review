@@ -10,6 +10,8 @@ export interface ICodeReviewOptions {
   documentUri?: string;
   /** Programming language of the code */
   language?: string;
+  /** Additional files for context, with file path as key and content as value */
+  files?: Record<string, string>;
 }
 
 /**

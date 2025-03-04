@@ -8,4 +8,6 @@ export interface IPRDescriptionOptions {
   gitDiff: string;
   /** PR template content */
   prTemplate: string;
+  /** Additional files for context, with file path as key and content as value */
+  files?: Record<string, string>;
 }

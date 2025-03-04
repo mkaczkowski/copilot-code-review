@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { CommandOptions, getDiffWithMainBranch, getWorkspaceFolder } from '../commandUtils';
-import { generateCodeReview } from './reviewCodeCommand.helpers';
+import { generateCodeReview, getChangedFilesContent } from './reviewCodeCommand.helpers';
 import { ICodeReviewResult } from './reviewCodeCommand.types';
 
 /**
@@ -44,11 +44,21 @@ export async function handleReviewCodeCommand(
     return;
   }
 
+  // Collect changed files for additional context
+  stream.progress('Collecting changed files for context...');
+  const changedFiles = await getChangedFilesContent(diffResult.diff, workspaceFolder);
+
   // Create a chat session to display the review
   stream.progress('Analyzing differences...');
 
   // Generate the code review
-  const reviewResult = await generateCodeReview(diffResult.diff, diffResult.mainBranchName, stream, token);
+  const reviewResult = await generateCodeReview(
+    diffResult.diff,
+    diffResult.mainBranchName,
+    changedFiles,
+    stream,
+    token
+  );
 
   if (token.isCancellationRequested) {
     return;

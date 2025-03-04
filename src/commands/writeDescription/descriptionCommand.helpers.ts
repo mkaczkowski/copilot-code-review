@@ -112,7 +112,6 @@ export function getJiraTicketNumber(): string {
     // Execute git command synchronously
     const branchName = execSync('git rev-parse --abbrev-ref HEAD', { cwd: workspaceFolder }).toString().trim();
 
-
     // Extract JIRA ticket number using regex
     // Format: ABC-123 (project code, followed by hyphen, followed by numbers)
     const jiraTicketRegex = /^([a-zA-Z]+-\d+)/i;
