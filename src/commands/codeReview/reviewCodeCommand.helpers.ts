@@ -9,6 +9,7 @@ import {
   sendRequestToModel
 } from '../../services/copilot';
 import { Logger } from '../../utils/logger';
+import { getWorkspaceFolder } from '../commandUtils';
 import { CodeReviewPrompt } from './prompts/codeReviewPrompt';
 import { CodeReviewComment, ICodeReviewOptions } from './reviewCodeCommand.types';
 
@@ -43,13 +44,13 @@ const FILE_PATTERNS = {
  */
 const LINE_PATTERNS = {
   /** Match line number references */
-  LINE_REF: /(?:line |L)(\d+)|:(\d+):|on line (\d+)/i
+  LINE_REF: /(?:line |L)(\d+)(?:-(\d+))?|:(\d+)(?:-(\d+))?:|on line (\d+)(?:-(\d+))?/i
 };
 
 /**
  * Streams a code review response to the chat with proper VSCode anchors
  */
-export function streamCodeReview(reviewContent: string, documentUri: string, stream: vscode.ChatResponseStream): void {
+export function streamCodeReview(reviewContent: string, stream: vscode.ChatResponseStream): void {
   if (!reviewContent) {
     return;
   }
@@ -67,8 +68,18 @@ export function streamCodeReview(reviewContent: string, documentUri: string, str
     // Group comments by file
     const fileGroups = groupCommentsByFile(comments);
 
+    const workspaceFolder = getWorkspaceFolder();
+    if (!workspaceFolder) {
+      throw new Error('Workspace folder not found');
+    }
+
+    const docUri = vscode.Uri.parse(workspaceFolder);
+    for (const file of fileGroups.keys()) {
+      stream.reference(createFileUri(docUri, file));
+    }
+
     // Stream the comments with proper anchors
-    streamCommentsWithAnchors(fileGroups, documentUri, stream);
+    streamCommentsWithAnchors(fileGroups, stream);
   } catch (error) {
     Logger.error('Error processing review content', error);
     // Fallback to raw content if processing fails
@@ -130,9 +141,23 @@ function parseSectionComments(section: string): CodeReviewComment[] {
 
     // Try to extract line number references
     const lineNumberMatch = line.match(LINE_PATTERNS.LINE_REF);
-    const lineNumber = lineNumberMatch
-      ? parseInt(lineNumberMatch[1] || lineNumberMatch[2] || lineNumberMatch[3])
-      : undefined;
+    let lineNumbers: number[] | undefined = undefined;
+
+    if (lineNumberMatch) {
+      // Extract the first line number (always present if there's a match)
+      const firstLine = parseInt(lineNumberMatch[1] || lineNumberMatch[3] || lineNumberMatch[5]);
+
+      // Check if there's a second line number (range)
+      const secondLine = lineNumberMatch[2] || lineNumberMatch[4] || lineNumberMatch[6];
+
+      if (secondLine) {
+        // We have a range
+        lineNumbers = [firstLine, parseInt(secondLine)];
+      } else {
+        // We have a single line
+        lineNumbers = [firstLine];
+      }
+    }
 
     // Try to extract file references from the line if not already found
     if (!file) {
@@ -146,7 +171,7 @@ function parseSectionComments(section: string): CodeReviewComment[] {
 
     comments.push({
       file,
-      lineNumber,
+      lineNumbers,
       comment: contentWithoutLineNumber
     });
   }
@@ -211,16 +236,22 @@ function createFileUri(baseUri: vscode.Uri, file: string): vscode.Uri {
  */
 function streamCommentsWithAnchors(
   fileGroups: Map<string, CodeReviewComment[]>,
-  documentUri: string,
   stream: vscode.ChatResponseStream
 ): void {
   try {
     // Parse the document URI
-    const docUri = vscode.Uri.parse(documentUri);
+    const workspaceFolder = getWorkspaceFolder();
+    if (!workspaceFolder) {
+      throw new Error('Workspace folder not found');
+    }
+
+    const docUri = vscode.Uri.parse(workspaceFolder);
 
     // For each file group, create a section with comments
     for (const [file, comments] of fileGroups.entries()) {
-      stream.markdown(`#### ${file} `);
+      const fileName = file.split('/').pop();
+
+      stream.markdown(`#### ${fileName} `);
       stream.markdown('\n');
 
       for (const [index, comment] of comments.entries()) {
@@ -253,25 +284,25 @@ function streamCommentWithAnchor(
   const commentText = `- ${comment.comment}`;
 
   // Add VSCode anchor if we have a line number
-  if (comment.lineNumber !== undefined) {
+  if (comment.lineNumbers && comment.lineNumbers.length > 0) {
     try {
       const targetUri = createFileUri(docUri, file);
 
-      // Format the comment with line number, anchor, and content
+      // Format the comment with line numbers, anchor, and content
       stream.markdown(`${index + 1}. `);
-      createCustomAnchor(targetUri, comment.lineNumber, `View code`, stream);
+      createCustomAnchor(targetUri, comment.lineNumbers, `View code`, stream);
       stream.markdown(`\n${commentText}\n\n`);
     } catch (error) {
       Logger.error('Error creating VSCode anchor', {
         file,
-        lineNumber: comment.lineNumber,
+        lineNumbers: comment.lineNumbers,
         error
       });
       // Fallback to simple text if anchor creation fails
       stream.markdown(`${commentText}\n\n`);
     }
   } else {
-    // No line number, just output the comment text
+    // No line numbers, just output the comment text
     stream.markdown(`${commentText}\n\n`);
   }
 }
@@ -281,15 +312,24 @@ function streamCommentWithAnchor(
  */
 function createCustomAnchor(
   targetUri: vscode.Uri,
-  lineNumber: number | undefined,
+  lineNumbers: number[] | undefined,
   customText: string,
   stream: vscode.ChatResponseStream
 ): void {
   try {
-    // Default to first line if no line number is provided
-    const line = lineNumber !== undefined ? lineNumber - 1 : 0;
-    const position = new vscode.Position(line, 0);
-    const location = new vscode.Location(targetUri, position);
+    // Default to first line if no line numbers are provided
+    if (!lineNumbers || lineNumbers.length === 0) {
+      const position = new vscode.Position(0, 0);
+      const location = new vscode.Location(targetUri, position);
+      stream.anchor(location, customText);
+      return;
+    }
+
+    // Use the first line number (0-indexed in VSCode)
+    const start = new vscode.Position(lineNumbers[0] - 1, 0);
+    const end = lineNumbers.length > 1 ? new vscode.Position(lineNumbers[1] - 1, 0) : null;
+    const range = end ? new vscode.Range(start, end) : start;
+    const location = new vscode.Location(targetUri, range);
     stream.anchor(location, customText);
   } catch (error) {
     Logger.error('Error creating custom anchor', { error });
@@ -351,7 +391,7 @@ export async function generateCodeReview(
     }
 
     // Stream the response with proper anchors
-    streamCodeReview(response.content, 'diff', stream);
+    streamCodeReview(response.content, stream);
 
     return true;
   } catch (error) {

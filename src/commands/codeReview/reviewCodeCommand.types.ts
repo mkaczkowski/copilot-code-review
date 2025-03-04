@@ -40,8 +40,9 @@ export interface ICodeReviewResult {
 export interface CodeReviewComment {
   /** File the comment refers to */
   file?: string;
-  /** Line number in the file */
-  lineNumber?: number;
+  /** Line number(s) in the file. If array has one element, it's a single line reference.
+   * If it has two elements, it's a range from first to second line. */
+  lineNumbers?: number[];
   /** The actual comment text */
   comment: string;
 }
