@@ -71,7 +71,9 @@ export async function getDiffWithMainBranch(workspaceFolder: string): Promise<Di
     const mainBranchName = branchesOutput.includes('main') ? 'main' : 'master';
 
     // Get the diff
-    const { stdout: diffOutput } = await execAsync(`git diff ${mainBranchName}`, { cwd: workspaceFolder });
+    const { stdout: diffOutput } = await execAsync(`git diff origin/${mainBranchName}  -- . ':(exclude)yarn.lock' `, {
+      cwd: workspaceFolder
+    });
 
     return {
       diff: diffOutput,
