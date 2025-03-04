@@ -1,18 +1,33 @@
-.vscode/**
-.vscode-test/**
-src/**
-.gitignore
-.yarnrc
-webpack.config.js
-vsc-extension-quickstart.md
-**/tsconfig.json
-**/.eslintrc.json
-**/*.map
+# Exclude VS Code configuration folders
+.vscode/
+.vscode-test/
+.idea/
+
+# Exclude test directories
+test/
+
+# Exclude source files and TypeScript-specific files since we only ship the compiled output
+src/
 **/*.ts
-!assets/**
+**/*.tsx
+
+# Exclude config files not needed at runtime (adjust as needed)
+tsconfig.json
+
+# Optionally, exclude source maps if you don’t need them
+**/*.map
+
+# Ensure the compiled output directory is included in the package
 !out/**
-.git/**
-.github/**
-.idea/**
-node_modules/**
-**/*.placeholder
+
+# Other files
+.github/
+.gitignore
+.git/
+
+# Package Manager Files (Usually not needed, can sometimes cause issues)
+package-lock.json
+
+# Exclude config files for IDE extensions
+.eslintrc.*
+.prettierrc.*

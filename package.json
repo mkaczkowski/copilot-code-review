@@ -4,7 +4,7 @@
   "displayName": "Copilot Code Review",
   "license": "MIT",
   "description": "Use GitHub Copilot to review your code and suggest improvements",
-  "icon": "assets/icon.png",
+  "icon": "assets/logo.png",
   "galleryBanner": {
     "color": "#1e1e1e",
     "theme": "dark"
@@ -27,7 +27,7 @@
     "code quality",
     "static analysis"
   ],
-  "version": "0.3.0",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -43,7 +43,7 @@
         "fullName": "PR-Reviewer",
         "name": "pr",
         "description": "Review PR code changes",
-        "isSticky": true,
+        "isSticky": false,
         "commands": [
           {
             "name": "write-description",
@@ -87,8 +87,7 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
-    "@vscode/chat-extension-utils": "^0.0.0-alpha.1",
-    "@vscode/prompt-tsx": "^0.3.0-alpha.12"
+    "@vscode/prompt-tsx": "^0.3.0-alpha.20"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
@@ -106,5 +105,8 @@
     "sinon": "^19.0.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.16.0"
-  }
+  },
+  "extensionDependencies": [
+    "github.copilot-chat"
+  ]
 }
