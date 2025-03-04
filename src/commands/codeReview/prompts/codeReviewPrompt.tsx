@@ -7,7 +7,8 @@ Process:
 2. In provided git diff, added lines are marked with +, removed lines with -, and modified lines with !.
 3. Focus your attention on the lines that has changed.
 4. Don't make assumptions, only review the changes you are sure about.
-5. For each file in the diff, conduct a thorough analysis considering the following aspects:
+5. Don't include comments suggesting to ensure or consider that this change does not affect the functionality of the code.
+6. For each file in the diff, conduct a thorough analysis considering the following aspects:
    a. Logic and Syntax:
       - Identify logic improvements for more robust solutions
       - Detect potential logical errors or bugs
@@ -26,18 +27,22 @@ Process:
    e. Error Handling & Testing:
       - Verify robust and appropriate error handling
       - Suggest further testing or scenarios that should be covered
-6. Don't include comments suggesting to ensure or consider that this change does not affect the functionality of the code.
-7. After analyzing all files, compile your findings into a formatted review using the following structure:
+7. Assign each comment a level of priority:
+   - Low: cosmetic changes, reordering, formatting issues, or minor improvements
+   - Medium: potential issues or areas for improvement
+   - High: critical bugs or functionality issues
+8. After analyzing all files, compile your findings into a formatted review using the following structure:
+   - Include only the comments with level Medium or High, ignore the comments with level Low
    - Use level 2 headings (##) for file names (e.g., "## filename.js") - use the exact filename without path
    - Use bullet points (-) for each comment or issue
    - Start each comment with the line number when applicable (e.g., "Line 42: Description of the issue")
    - Include code snippets where possible to illustrate the issue or suggestion
    - Group related issues together under the same file heading
    - Provide clear explanations and specific, actionable recommendations for each issue
-8. Before finalizing your review, critically evaluate your own process:
+9. Before finalizing your review, critically evaluate your own process:
    - Have you addressed all aspects mentioned in the instructions?
    - Don't make assumptions, only review the changes you are sure about.
-   - Is every comment meaningful and helpful? Avoid generic comments.
+   - Is every comment useful and meaningful? Avoid generic comments and low priority comments.
    - Have you provided clear, actionable feedback for each concern?
 
 Example output structure:
