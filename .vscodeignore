@@ -14,9 +14,6 @@ src/
 # Exclude config files not needed at runtime (adjust as needed)
 tsconfig.json
 
-# Optionally, exclude source maps if you don’t need them
-**/*.map
-
 # Ensure the compiled output directory is included in the package
 !out/**
 
@@ -27,7 +24,9 @@ tsconfig.json
 
 # Package Manager Files (Usually not needed, can sometimes cause issues)
 package-lock.json
+eslint.config.mjs
 
 # Exclude config files for IDE extensions
 .eslintrc.*
 .prettierrc.*
+.DS_Store
