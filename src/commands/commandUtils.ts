@@ -23,6 +23,7 @@ export const AVAILABLE_COMMANDS = `
 ## Available Commands
 
 - \`@pr /self-review\` - Review your code changes compared to the main branch
+  - \`--include-files\` or \`-i\` - Include changed file contents in the review
 - \`@pr /write-description\` - Generate a description for your code changes
 - \`@pr /all\` - Show this list of available commands
 

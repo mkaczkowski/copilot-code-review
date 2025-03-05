@@ -126,9 +126,7 @@ function parseSectionComments(section: string): CodeReviewComment[] {
   // Split section into lines or bullet points
   const lines = section.split(/\n(?:[-*+] |(?=\d+\. ))/);
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
+  for (const line of lines) {
     // Skip empty lines or headings
     if (!line.trim() || line.trim().startsWith('#')) {
       continue;
@@ -456,9 +454,8 @@ export async function getChangedFilesContent(
         // Check if file exists
         if (fs.existsSync(fullPath)) {
           // Read file content
+          Logger.debug(`Read file ${fullPath}`);
           const content = fs.readFileSync(fullPath, 'utf8');
-
-          // Add to changedFiles object
           changedFiles[filePath] = content;
         }
       } catch (fileError) {
