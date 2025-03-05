@@ -47,6 +47,7 @@ This extension works by comparing your local changes to the main branch of your 
 2. Type `@pr` followed by a command:
 
    - `@pr /self-review` - to review your code changes
+      - `--include-files` or `-i` - include changed files content to the prompt's context
    - `@pr /write-description` - to generate a description for your changes
 
    Auto-completion will suggest available commands as you type.
@@ -55,8 +56,6 @@ This extension works by comparing your local changes to the main branch of your 
 
 1. Open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 2. Type "Copilot Code Review" to see available commands:
-   - "Copilot Code Review: Self-Review Code" - to review your code changes
-   - "Copilot Code Review: Write PR Description" - to generate a description for your changes
    - "Copilot Code Review: Show Debug Logs" - to view the extension logs
 
 ## Extension Settings
