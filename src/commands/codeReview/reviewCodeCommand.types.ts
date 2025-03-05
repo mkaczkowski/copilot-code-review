@@ -55,5 +55,4 @@ export interface CodeReviewComment {
 export interface DiffResult {
   diff: string;
   mainBranchName: string;
-  error?: string;
 }

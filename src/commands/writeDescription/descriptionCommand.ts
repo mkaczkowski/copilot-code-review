@@ -32,24 +32,20 @@ export async function handleDescriptionCommand(
   stream.progress('Analyzing code differences with main branch...');
 
   // Get the diff with main branch
-  const diffResult = await getDiffWithMainBranch(workspaceFolder);
+  try {
+    const diffResult = await getDiffWithMainBranch(workspaceFolder);
 
-  if (diffResult.error) {
-    stream.markdown(diffResult.error);
-    return;
-  }
+    if (!diffResult.diff.trim()) {
+      stream.markdown('No code changes detected compared to the main branch.');
+      return;
+    }
 
-  if (!diffResult.diff.trim()) {
-    stream.markdown('No code differences found with main branch.');
-    return;
-  }
+    // Get the PR template
+    stream.progress('Fetching PR template...');
+    const templateResult = await getPRTemplate(workspaceFolder);
 
-  // Get the PR template
-  stream.progress('Fetching PR template...');
-  const templateResult = await getPRTemplate(workspaceFolder);
-
-  if (templateResult.error) {
-    stream.markdown(`#### Missing PR Template
+    if (templateResult.error) {
+      stream.markdown(`#### Missing PR Template
 
 To create a PR template:
 1. Create a \`.github\` directory in your repository root
@@ -58,66 +54,71 @@ To create a PR template:
 
 Would you like to continue with a basic template? If so, please create the template file first.
 `);
-    return;
-  }
+      return;
+    }
 
-  let prTemplate = templateResult.content;
+    let prTemplate = templateResult.content;
 
-  // Replace JIRA ticket number placeholder if present
-  prTemplate = prTemplate.replace('JIRA_TICKET_NUMBER', getJiraTicketNumber());
+    // Replace JIRA ticket number placeholder if present
+    prTemplate = prTemplate.replace('JIRA_TICKET_NUMBER', getJiraTicketNumber());
 
-  // Generate the PR description
-  stream.progress('Generating PR description...');
-
-  try {
     // Generate the PR description
-    const response = await generatePRDescriptionWithCopilot(
-      {
-        gitDiff: diffResult.diff,
-        prTemplate
-      },
-      token
-    );
+    stream.progress('Generating PR description...');
 
-    if (token.isCancellationRequested) {
-      return;
-    }
+    try {
+      // Generate the PR description
+      const response = await generatePRDescriptionWithCopilot(
+        {
+          gitDiff: diffResult.diff,
+          prTemplate
+        },
+        token
+      );
 
-    if (response.error) {
-      Logger.error('PR description generation failed', response.error);
-      stream.markdown(`PR description generation failed: ${response.error}`);
-      return;
-    }
-
-    // Output the PR description
-    stream.markdown('## Generated PR Description\n\n' + response.content);
-
-    // Add a note about copying
-    stream.markdown('\n\n---\n*You can copy this description and use it for your pull request.*');
-
-    // Add a button to copy the description to clipboard
-    const copyButton = {
-      title: 'Copy to Clipboard',
-      command: 'copilot-code-review.copyToClipboard',
-      arguments: [response.content]
-    };
-
-    stream.button(copyButton);
-
-    // Register the command to copy to clipboard
-    vscode.commands.executeCommand('setContext', 'copilot-code-review.hasPRDescription', true);
-    vscode.commands.registerCommand('copilot-code-review.copyToClipboard', async (text: string) => {
-      try {
-        let strippedText = text.replace(/```markdown\n?/g, '').replace(/```\n?/g, '');
-        await vscode.env.clipboard.writeText(strippedText);
-        vscode.window.showInformationMessage('PR description copied to clipboard');
-      } catch (error) {
-        Logger.error('Error copying PR description to clipboard', error);
-        vscode.window.showErrorMessage('Failed to copy PR description to clipboard');
+      if (token.isCancellationRequested) {
+        return;
       }
-    });
-  } catch (error) {
-    Logger.error('Error generating PR description', error);
-    stream.markdown('An error occurred while generating the PR description');
+
+      if (response.error) {
+        Logger.error('PR description generation failed', response.error);
+        stream.markdown(`PR description generation failed: ${response.error}`);
+        return;
+      }
+
+      // Output the PR description
+      stream.markdown('## Generated PR Description\n\n' + response.content);
+
+      // Add a note about copying
+      stream.markdown('\n\n---\n*You can copy this description and use it for your pull request.*');
+
+      // Add a button to copy the description to clipboard
+      const copyButton = {
+        title: 'Copy to Clipboard',
+        command: 'copilot-code-review.copyToClipboard',
+        arguments: [response.content]
+      };
+
+      stream.button(copyButton);
+
+      // Register the command to copy to clipboard
+      vscode.commands.executeCommand('setContext', 'copilot-code-review.hasPRDescription', true);
+      vscode.commands.registerCommand('copilot-code-review.copyToClipboard', async (text: string) => {
+        try {
+          let strippedText = text.replace(/```markdown\n?/g, '').replace(/```\n?/g, '');
+          await vscode.env.clipboard.writeText(strippedText);
+          vscode.window.showInformationMessage('PR description copied to clipboard');
+        } catch (error) {
+          Logger.error('Error copying PR description to clipboard', error);
+          vscode.window.showErrorMessage('Failed to copy PR description to clipboard');
+        }
+      });
+    } catch (error) {
+      Logger.error('Error generating PR description', error);
+      stream.markdown('An error occurred while generating the PR description');
+    }
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    stream.markdown(errorMessage);
+    return;
   }
 }

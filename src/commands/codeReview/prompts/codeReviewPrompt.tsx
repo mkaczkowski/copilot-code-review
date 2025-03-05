@@ -48,7 +48,7 @@ After analyzing all files, compile your findings into a formatted review using t
 ## Finalization
 Before finalizing your review, critically evaluate your own process:
   - Have you addressed all aspects mentioned in the instructions?
-  - Is every comment useful and meaningful? Skip generic comments and low priority comments.
+  - Is every comment useful and meaningful? Skip generic comments, and low priority comments.
   - Have you provided clear, actionable feedback for each concern, bug or improvement?
 
 ## Example Output
